@@ -2,12 +2,12 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { DigestRow, Night, ReadNight, RunStatus } from './types.js';
 
-type Entry = { at: string; job: string; status: RunStatus; owner: string | null; error: string | null };
+export type Entry = { at: string; job: string; status: RunStatus; owner: string | null; error: string | null };
 
 const STATUSES: readonly string[] = ['ok', 'retry', 'fail'];
 
 // Parse at the edge (styleguide): anything that isn't a whole, well-formed entry is a bad line.
-function parseLine(line: string): Entry | null {
+export function parseLine(line: string): Entry | null {
   let v: unknown;
   try {
     v = JSON.parse(line);
