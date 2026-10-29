@@ -1,0 +1,51 @@
+# Plan morning-digest § 3–4 (ADR 0003). Runs rig, saves /digest/<night> as one HTML file and
+# deploys it to GitHub Pages. The preview is never committed: it lives only in the Pages
+# deployment, so uploading over it really takes the marker off. The marker comes from the
+# LANE_MARKER secret, so run logs show *** instead of it. Clean up: delete the secret, run again.
+name: preview
+
+on:
+  workflow_dispatch:
+    inputs:
+      night:
+        description: Night to preview
+        default: '2026-10-28'
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: corepack enable pnpm && pnpm install
+      - name: Save the page
+        env:
+          LANE_MARKER: ${{ secrets.LANE_MARKER }}
+          NIGHT: ${{ inputs.night }}
+          PORT: 8787
+        run: |
+          pnpm start &
+          for i in $(seq 30); do curl -fsS localhost:8787/health >/dev/null && break; sleep 1; done
+          mkdir _site
+          curl -fsS "localhost:8787/digest/$NIGHT" -o _site/index.html
+          grep -q 'class="marker"' _site/index.html
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+          retention-days: 1
+      - id: deploy
+        uses: actions/deploy-pages@v4
