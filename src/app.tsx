@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { sortRows } from './digest/sort.js';
 import { readNight } from './digest/read.js';
 import { loadConfig, type RigConfig } from './config.js';
 import { lane } from './lane.js';
@@ -37,6 +38,14 @@ export function createApp(config: RigConfig = loadConfig()) {
         <DigestPage data={data} />
       </Layout>,
     );
+  });
+
+  app.get('/api/digest/:night', (c) => {
+    const night = c.req.param('night');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(night)) return c.json({ error: 'bad night', night }, 404);
+    const data = readNight(config.runsDir, night);
+    if (!data) return c.json({ error: 'no run log', night }, 404);
+    return c.json({ night, rows: sortRows(data.rows), badLines: data.badLines });
   });
 
   return app;

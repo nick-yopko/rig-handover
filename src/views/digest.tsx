@@ -1,9 +1,11 @@
+import { sortRows } from '../digest/sort.js';
 import type { Night } from '../digest/types.js';
 
 const dash = '—';
 
 export function DigestPage({ data }: { data: Night }) {
-  const rows = [...data.rows].sort((a, b) => a.job.localeCompare(b.job));
+  // Same order as /api/digest/:night (ADR 0001: the page and the JSON never disagree).
+  const rows = sortRows(data.rows);
   const empty = rows.length === 0 && data.badLines === 0;
   return (
     <>
